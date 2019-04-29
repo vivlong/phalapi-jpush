@@ -1,0 +1,25 @@
+{
+	"name": "vivlong/phalapi-jpush",
+	"description": "PhalApi 2.x 扩展类库：基于极光推送的服务端扩展",
+	"type": "library",
+	"keywords": [
+		"phalapi", "phalapi-jpush", "jpush"
+	],
+	"license": "GPL-3.0+",
+	"minimum-stability": "dev",
+	"homepage": "https://www.phalapi.net/",
+	"authors": [{
+		"name": "vivlong",
+		"email": "vivlonglz@gmail.com",
+		"homepage": "http://vivlong.github.io",
+		"role": "Developer"
+	}],
+	"require": {
+    "jpush/jpush": "*"
+	},
+	"autoload": {
+		"psr-4": {
+			"PhalApi\\Jpush\\": "src"
+		}
+	}
+}
