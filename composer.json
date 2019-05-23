@@ -15,7 +15,7 @@
 		"role": "Developer"
 	}],
 	"require": {
-    "jpush/jpush": "^3.*.*"
+    "jpush/jpush": "*"
 	},
 	"autoload": {
 		"psr-4": {
