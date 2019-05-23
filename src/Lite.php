@@ -21,88 +21,145 @@ class Lite {
 	/**
 	 * 推送接口
 	 */
-	public function sendPush($device_id, $content, $title, $extras) {
+	public function push($device_id, $device_type, $content, $title, $extras, $sendno = null) {
+		$di = \PhalApi\DI();
+		$rs = array(
+			'code' => 0,
+			'msg' => '',
+			'data' => null
+		);
 		if(!empty($device_id)) {
-			$push = $this->client->push();
-			$platform = array('all');
-			$regId = array($device_id);
-			$ios_notification = array(
-				'badge' => '+1',
-				'extras' => $extras
-			);
-			$android_notification = array(
-				'title' => $title,
-				'extras' => $extras
-			);
+			$pusher = $this->client->push();
+			//$cid = md5(implode(',', $extras));
+			//$pusher->setCid($cid);
+			$pusher->addRegistrationId(array($device_id));
+			if(strpos('android', strtolower($device_type)) !== false) {
+				$pusher->setPlatform('android');
+				$android_notification = array(
+					'title' => $title,
+					//'category' => $cid,
+					'extras' => $extras
+				);
+				$pusher->androidNotification($content, $android_notification);
+			} else if(strpos('ios', strtolower($device_type)) !== false) {
+				$pusher->setPlatform('ios');
+				$ios_notification = array(
+					//'alert' => $content,
+					'badge' => '+1',
+					//'thread-id' => $cid,
+					'extras' => $extras
+				);
+				$pusher->iosNotification($content, $ios_notification);
+			} else {
+				$pusher->setPlatform('all');
+              	$android_notification = array(
+					'title' => $title,
+					//'category' => $cid,
+					'extras' => $extras
+				);
+				$pusher->androidNotification($content, $android_notification);
+				$ios_notification = array(
+					//'alert' => $content,
+					'badge' => '+1',
+					//'thread-id' => $cid,
+					'extras' => $extras
+				);
+				$pusher->iosNotification($content, $ios_notification);
+            }
 			$options = array(
 				'time_to_live' => 0,
 			);
+			if(!empty($sendno)) {
+				$options['sendno'] = $sendno;
+			}
 			try {
-				$response = $push->setPlatform($platform)
-					->addRegistrationId($regId)
-					->iosNotification($content, $ios_notification)
-					->androidNotification($content, $android_notification)
-					->options($options)
-					->send();
-				return 1;
+				$response = $pusher->options($options)->send();
+              	if($response['http_code'] === 200) {
+					$rs['code'] = 1;
+					$rs['msg'] = 'success';
+					$rs['data'] = $response['body'];
+					if($di->debug) $di->logger->log('JPush','push', array('rs' => $response['body']));
+				}
 			} catch (\JPush\Exceptions\APIConnectionException $e) {
-				\PhalApi\DI()->logger->log('JPush','APIConnectionException', array('error' => $e->__toString()));
+				$rs['code'] = -1;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','getMessageStatus', array('error' => $e->__toString()));
 			} catch (\JPush\Exceptions\APIRequestException $e) {
-				\PhalApi\DI()->logger->log('JPush','APIRequestException', array('error' => $e->__toString()));
+				$rs['code'] = -2;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','getMessageStatus', array('error' => $e->__toString()));
+			}
+		} else {
+			$rs['code'] = -3;
+			$rs['msg'] = 'Empty Params';
+		}
+		return $rs;
+	}
+
+	/**
+	 * 获取送达统计
+	 */
+	public function getReceived($msg_id) {
+		if(!empty($device_id)) {
+			$report = $this->client->report();
+			try {
+				return $report->getReceived($msg_id);
+			} catch (\JPush\Exceptions\APIConnectionException $e) {
+				\PhalApi\DI()->logger->log('JPush','getReceived', array('error' => $e->__toString()));
+			} catch (\JPush\Exceptions\APIRequestException $e) {
+				\PhalApi\DI()->logger->log('JPush','getReceived', array('error' => $e->__toString()));
 			}
 		}
 		return -1;
 	}
 
 	/**
-	 * 推送接口
+	 * 获取消息统计
 	 */
-	public function push($device_id, $device_type, $content, $title, $extras) {
+	public function getMessages($msg_id) {
 		if(!empty($device_id)) {
-			$pusher = $this->client->push();
-			$cid = md5(implode(',', $extras)); //用于防止 api 调用端重试造成服务端的重复推送而定义的一个标识符。
-			//$pusher->setCid($cid);
-			$pusher->addRegistrationId(array($device_id));
-			$platform = array('all'); //推送平台设置
-			if(strpos('android', strtolower($device_type))) {
-				$platform = array('android');
-				$android_notification = array(
-					'title' => $title,
-					'category' => $cid,
-					'extras' => $extras
-				);
-				$pusher->androidNotification($content, $android_notification);
-			} else if(strpos('ios', strtolower($device_type))) {
-				$platform = array('ios');
-				$ios_notification = array(
-					'alert' => $content,
-					'badge' => '+1',
-					'thread-id' => $cid,
-					'extras' => $extras
-				);
-				$pusher->iosNotification($content, $ios_notification);
-			}
-			$pusher->message($title, [
-				'title' => $title,
-				'msg_content' => $content,
-				'content_type' => 'text',
-				'extras' => $extras
-			]);
-			$pusher->setPlatform($platform);
-			//推送参数
-			$options = array(
-				//'sendno' => md5(uniqid('', true)),
-				'time_to_live' => 0,
-			);
+			$report = $this->client->report();
 			try {
-				$response = $pusher->options($options)->send();
-				return 1;
+				return $report->getMessages($msg_id);
 			} catch (\JPush\Exceptions\APIConnectionException $e) {
-				\PhalApi\DI()->logger->log('JPush','APIConnectionException', array('error' => $e->__toString()));
+				\PhalApi\DI()->logger->log('JPush','getReceived', array('error' => $e->__toString()));
 			} catch (\JPush\Exceptions\APIRequestException $e) {
-				\PhalApi\DI()->logger->log('JPush','APIRequestException', array('error' => $e->__toString()));
+				\PhalApi\DI()->logger->log('JPush','getReceived', array('error' => $e->__toString()));
 			}
 		}
 		return -1;
+	}
+
+	/**
+	 * 送达状态查询
+	 */
+	public function getMessageStatus($msgId, $deviceId) {
+		$di = \PhalApi\DI();
+		$rs = array(
+			'code' => 0,
+			'msg' => '',
+			'data' => null
+		);
+		if(!empty($msgId) && !empty($deviceId)) {
+			try {
+				$report = $this->client->report();
+				$response = $report->getMessageStatus(intval($msgId), $deviceId);
+				$rs['code'] = 1;
+				$rs['msg'] = 'success';
+				$rs['data'] = $response;
+			} catch (\JPush\Exceptions\APIConnectionException $e) {
+				$rs['code'] = -1;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','getMessageStatus', array('error' => $e->__toString()));
+			} catch (\JPush\Exceptions\APIRequestException $e) {
+				$rs['code'] = -2;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','getMessageStatus', array('error' => $e->__toString()));
+			}
+		} else {
+			$rs['code'] = -3;
+			$rs['msg'] = 'Empty Params';
+		}
+		return $rs;
 	}
 }
