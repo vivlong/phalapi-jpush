@@ -162,4 +162,103 @@ class Lite {
 		}
 		return $rs;
 	}
+
+	/**
+	 * 获取用户在线状态
+	 */
+	public function getDevicesStatus($deviceIds) {
+		$di = \PhalApi\DI();
+		$rs = array(
+			'code' => 0,
+			'msg' => '',
+			'data' => null
+		);
+		if(!empty($deviceIds)) {
+			try {
+				$device = $this->client->device();
+				$response = $device->getDevicesStatus($deviceIds);
+				$rs['code'] = 1;
+				$rs['msg'] = 'success';
+				$rs['data'] = $response;
+			} catch (\JPush\Exceptions\APIConnectionException $e) {
+				$rs['code'] = -1;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','getDevicesStatus', array('error' => $e->__toString()));
+			} catch (\JPush\Exceptions\APIRequestException $e) {
+				$rs['code'] = -2;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','getDevicesStatus', array('error' => $e->__toString()));
+			}
+		} else {
+			$rs['code'] = -3;
+			$rs['msg'] = 'Empty Params';
+		}
+		return $rs;
+	}
+
+	/**
+	 * 更新 mobile
+	 */
+	public function updateMoblie($deviceId, $phoneno) {
+		$di = \PhalApi\DI();
+		$rs = array(
+			'code' => 0,
+			'msg' => '',
+			'data' => null
+		);
+		if(!empty($deviceId)) {
+			try {
+				$device = $this->client->device();
+				$response = $device->updateMoblie($deviceId, $phoneno);
+				$rs['code'] = 1;
+				$rs['msg'] = 'success';
+				$rs['data'] = $response;
+			} catch (\JPush\Exceptions\APIConnectionException $e) {
+				$rs['code'] = -1;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','updateMoblie', array('error' => $e->__toString()));
+			} catch (\JPush\Exceptions\APIRequestException $e) {
+				$rs['code'] = -2;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','updateMoblie', array('error' => $e->__toString()));
+			}
+		} else {
+			$rs['code'] = -3;
+			$rs['msg'] = 'Empty Params';
+		}
+		return $rs;
+	}
+
+	/**
+	 * 取消手机绑定
+	 */
+	public function clearMobile($deviceId) {
+		$di = \PhalApi\DI();
+		$rs = array(
+			'code' => 0,
+			'msg' => '',
+			'data' => null
+		);
+		if(!empty($deviceId)) {
+			try {
+				$device = $this->client->device();
+				$response = $device->clearMobile($deviceId);
+				$rs['code'] = 1;
+				$rs['msg'] = 'success';
+				$rs['data'] = $response;
+			} catch (\JPush\Exceptions\APIConnectionException $e) {
+				$rs['code'] = -1;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','clearMobile', array('error' => $e->__toString()));
+			} catch (\JPush\Exceptions\APIRequestException $e) {
+				$rs['code'] = -2;
+				$rs['msg'] = $e->__toString();
+				if($di->debug) $di->logger->log('JPush','clearMobile', array('error' => $e->__toString()));
+			}
+		} else {
+			$rs['code'] = -3;
+			$rs['msg'] = 'Empty Params';
+		}
+		return $rs;
+	}
 }
